@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "bootstrap";
 //create your first component
 const Home = () => {
-	const [input, setInput] = useState("");
+	const [input, setInput] = useState({ label: "", done: false });
 
 	const [toDo, setToDo] = useState([]);
 
 	const handleKeyDown = e => {
 		if (e.key === "Enter") {
-			if (input.trim != "") {
+			if (input.label.trim() != "") {
 				setToDo([...toDo, input]);
-				setInput("");
+				setInput({ label: "", done: false });
+				addTask();
 			}
 		}
 	};
@@ -19,6 +20,70 @@ const Home = () => {
 		const newArray = toDo.filter((toDo, index) => index != id);
 		setToDo(newArray);
 	};
+
+	const crearUsuario = async () => {
+		const respuesta = await fetch(
+			"https://assets.breatheco.de/apis/fake/todos/user/diegomilano",
+			{
+				method: "POST",
+				body: JSON.stringify([]),
+				headers: {
+					"Content-type": "application/json"
+				}
+			}
+		);
+		consultaApi();
+	};
+
+	const consultaApi = async () => {
+		const respuesta = await fetch(
+			"https://assets.breatheco.de/apis/fake/todos/user/diegomilano"
+		);
+		if (respuesta.ok) {
+			let data = await respuesta.json();
+			setToDo(data);
+		} else {
+			crearUsuario();
+		}
+	};
+
+	const addTask = async () => {
+		const respuesta = await fetch(
+			"https://assets.breatheco.de/apis/fake/todos/user/diegomilano",
+			{
+				method: "PUT",
+				body: JSON.stringify([...toDo, input]),
+				headers: {
+					"Content-type": "application/json"
+				}
+			}
+		);
+		if (respuesta.ok) {
+			consultaApi();
+		}
+	};
+
+	const deleteTask = async id => {
+		const newArray = toDo.filter((toDo, index) => index != id);
+
+		const respuesta = await fetch(
+			"https://assets.breatheco.de/apis/fake/todos/user/diegomilano",
+			{
+				method: "PUT",
+				body: JSON.stringify(newArray),
+				headers: {
+					"Content-type": "application/json"
+				}
+			}
+		);
+		if (respuesta.ok) {
+			await consultaApi();
+		}
+	};
+
+	useEffect(() => {
+		consultaApi();
+	}, []);
 
 	return (
 		<div className="container div-father">
@@ -30,9 +95,11 @@ const Home = () => {
 					className="list-group input-important"
 					type="text"
 					placeholder="What needs to done?"
-					name="text"
-					value={input}
-					onChange={e => setInput(e.target.value)}
+					name="label"
+					value={input.label}
+					onChange={e =>
+						setInput({ ...input, [e.target.name]: e.target.value })
+					}
 					onKeyDown={handleKeyDown}
 				/>
 				{toDo.map((toDo, index) => {
@@ -41,9 +108,9 @@ const Home = () => {
 							className="list-group-item list-group-item-light li-one"
 							key={index}
 							onClick={() => {
-								handleDeleteTask(index);
+								deleteTask(index);
 							}}>
-							{toDo}
+							{toDo.label}
 						</li>
 					);
 				})}
